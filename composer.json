@@ -1,0 +1,22 @@
+{
+    "name": "dapepe/iredutils",
+    "description": "iRedMail Utilities",
+    "license": "Commercial",
+    "require": {
+        "php": ">=5.4.0"
+    },
+    "authors": [
+        {
+            "name": "Peter Haider",
+            "email": "peter.haider@zeyon.net",
+            "homepage": "https://www.about.me/peterhaider"
+        }
+    ],
+    "require": {
+        "php"                 : ">=5.4.0",
+        "mustangostang/spyc"  : ">=0.5",
+        "dapepe/microdb"      : ">=1.0.1",
+        "zeyon/rest"          : ">=1.4.2",
+        "wp-cli/php-cli-tools": ">=0.10.5"
+    }
+}

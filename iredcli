@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# CLI Script for iRedMail 
+# ------------------------------------------------------------------------
+# Author:    Peter-Christoph Haider
+# ------------------------------------------------------------------------
+
+DIR="$(dirname "$0")"
+
+# Path to the PHP command
+CMD_PHP="php"
+
+
+# ====================== INIT APPLICATION PARAMS =========================
+
+XARGS=""
+while [ "$1" != "" ]; do
+	case $1 in
+		* )
+			XARGS="$XARGS $1"
+		;;
+	esac
+	shift
+done
+
+$CMD_PHP "$DIR/cli.php" $XARGS
+exit 0

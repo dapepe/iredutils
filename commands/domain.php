@@ -1,0 +1,73 @@
+<?php
+
+class DomainCommand extends Helper {
+	public function init($cli) {
+		if (!isset($cli['arguments'][0])) {
+			echo 'No operation specified!'."\n";
+			$this->showUsage();
+			die();
+		}
+
+		try {
+			switch ($cli['arguments'][0]) {
+				case 'remove':
+				case 'add':
+					if (!isset($cli['arguments'][1])) {
+						echo 'Insufficient arguments'."\n";
+						$this->showUsage();
+						die();
+					}
+					if ($cli['arguments'][0] == 'add')
+						$this->add($cli['arguments'][1]);
+					else
+						$this->remove($cli['arguments'][1]);
+
+					echo 'OK'."\n";
+					break;
+
+				case 'show':
+					$this->renderTable($this->show(), ['domain', 'created']);
+					break;
+
+				default:
+					echo 'Invalid arguement: '.$cli['arguments'][0]."\n";
+					$this->showUsage();
+					break;
+			}
+		} catch (Exception $e) {
+			echo 'ERROR: '.$e->getMessage()."\n";
+			return;
+		}
+	}
+
+	public function showUsage() {
+		echo 'Usage: iredcli domain'."\n";
+		echo '  show'."\n";
+		echo '  add <DOMAIN>'."\n";
+		echo '  remove <DOMAIN>'."\n";
+	}
+
+	public function add($domain) {
+		if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/', $domain))
+			throw new \Exception('Not a valid domain name: '.$domain);
+
+		$this->db->table('domain')->insert([
+			'domain' => $domain,
+			'created' => date('Y-m-d H:i:s'),
+			'modified' => date('Y-m-d H:i:s')
+		]);
+	}
+
+	public function remove($domain) {
+		$node = $this->db->table('domain')->getOneBy('domain', $domain);
+
+		if ($node === false)
+			throw new \Exception('Domain not found: '.$domain);
+
+		$this->db->table('domain')->removeBy('domain', $domain);
+	}
+
+	public function show() {
+		return $this->db->select('*', 'domain', false, 'domain');
+	}
+}
