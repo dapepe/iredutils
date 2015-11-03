@@ -51,6 +51,10 @@ class DomainCommand extends Helper {
 		if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/', $domain))
 			throw new \Exception('Not a valid domain name: '.$domain);
 
+		$node = $this->db->table('domain')->getOneBy('domain', $domain);
+		if ($node)
+			throw new \Exception('Domain already exists: '.$domain);
+
 		$this->db->table('domain')->insert([
 			'domain' => $domain,
 			'created' => date('Y-m-d H:i:s'),
@@ -60,11 +64,22 @@ class DomainCommand extends Helper {
 
 	public function remove($domain) {
 		$node = $this->db->table('domain')->getOneBy('domain', $domain);
-
 		if ($node === false)
 			throw new \Exception('Domain not found: '.$domain);
 
 		$this->db->table('domain')->removeBy('domain', $domain);
+
+		// Remove all mailboxes
+		include_once 'mailbox.php';
+		$mailbox = new MailboxCommand();
+		foreach ($mailbox->show($domain) as $node)
+			$mailbox->remove($node['username']);
+
+		// Remove all aliases
+		include_once 'alias.php';
+		$alias = new AliasCommand();
+		foreach ($alias->show($domain) as $node)
+			$alias->remove($node['address']);
 	}
 
 	public function show() {

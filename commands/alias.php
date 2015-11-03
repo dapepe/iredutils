@@ -11,18 +11,24 @@ class AliasCommand extends Helper {
 		try {
 			switch ($cli['arguments'][0]) {
 				case 'remove':
-				case 'add':
-					if (!isset($cli['arguments'][1]) && !isset($cli['arguments'][2])) {
+					if (!isset($cli['arguments'][1])) {
 						echo 'Insufficient arguments'."\n";
 						$this->showUsage();
 						die();
 					}
 
-					if ($cli['arguments'][0] == 'add')
-						$this->add($cli['arguments'][1], $cli['arguments'][2]);
-					else
-						$this->remove($cli['arguments'][1], $cli['arguments'][2]);
+					$this->remove($cli['arguments'][1], isset($cli['arguments'][2]) ? $cli['arguments'][2] : false);
+					echo 'OK'."\n";
+					break;
 
+				case 'add':
+					if (!isset($cli['arguments'][1]) || !isset($cli['arguments'][2])) {
+						echo 'Insufficient arguments'."\n";
+						$this->showUsage();
+						die();
+					}
+
+					$this->add($cli['arguments'][1], $cli['arguments'][2]);
 					echo 'OK'."\n";
 					break;
 
@@ -71,11 +77,25 @@ class AliasCommand extends Helper {
 		if (!$node)
 			throw new \Exception('Mailbox does not exist: '.$mailbox);
 
-		// Check if the alias exists
-		$node = $this->getEntry($address, $mailbox);
-		if ($node)
-			throw new \Exception('Alias already exists: '.$address.' -> '.$mailbox);
+		// Add a new mailbox to the alias
+		$node = $this->db->table('alias')->getOneBy('address', $address);
+		if ($node) {
+			$goto = explode(',', $node['goto']);
+			if (in_array($mailbox, $goto)) {
+				echo 'Alias already exists: '.$address.' -> '.$mailbox."\n";
+				return;
+			}
+			$goto[] = $mailbox;
+			$goto = implode(',', $goto);
 
+			$this->db->table('alias')->updateBy('address', $address, [
+				'goto'     => $goto,
+				'modified' => date('Y-m-d H:i:s')
+			]);
+			return;
+		}
+
+		// Add a new alias
 		$this->db->table('alias')->insert([
 			'address'      => $address,
 			'goto'         => $mailbox,
@@ -89,27 +109,37 @@ class AliasCommand extends Helper {
 		]);
 	}
 
-	public function remove($address, $mailbox) {
+	public function remove($address, $mailbox=false) {
 		// Check if the alias exists
-		$node = $this->getEntry($address, $mailbox);
+		$node = $this->db->table('alias')->getOneBy('address', $address);
 		if (!$node)
-			throw new \Exception('Alias does not exist: '.$address.' -> '.$mailbox);
+			throw new \Exception('Alias does not exist: '.$address);
 
 		if ($node['accesspolicy'] != 'public')
 			throw new \Exception('Alias can\'t be removed (accesspolicy not public)');
 
-		$this->db->remove('alias', $this->db->where('address', $address).' AND '.$this->db->where('goto', $mailbox));
+		if ($mailbox)
+			$goto = $this->cleanGoto($node['goto'], $mailbox);
+
+		if (!$mailbox || !$goto) {
+			$this->db->table('alias')->removeBy('address', $address);
+			return;
+		}
+
+		$this->db->table('alias')->updateBy('address', $address, [
+			'goto'     => $goto,
+			'modified' => date('Y-m-d H:i:s')
+		]);
 	}
 
 	public function show($domainOrEmail=false, $search=false) {
-
 		if ($domainOrEmail) {
 			return $this->db->select(
 				'*',
 				'alias',
 				$this->db->where('accesspolicy', 'public') .
 				' AND ' .
-				$this->db->where(strpos($domainOrEmail, '@') === false ? 'domain' : 'goto', $domainOrEmail) .
+				$this->db->whereLike(strpos($domainOrEmail, '@') === false ? 'domain' : 'goto', '%'.$domainOrEmail.'%') .
 				($search
 					? ' AND ' . $this->db->whereLike('address', '%' . $search . '%')
 					: ''
@@ -126,11 +156,12 @@ class AliasCommand extends Helper {
 			'domain');
 	}
 
-	public function getEntry($address, $mailbox) {
-		$arrItem = $this->db->select('*', 'alias', $this->db->where('address', $address).' AND '.$this->db->where('goto', $mailbox));
-		if ($arrItem)
-			return $arrItem[0];
-		else
-			return false;
+	public function cleanGoto($goto, $mailbox) {
+		$goto = explode(',', $goto);
+
+		if (($key = array_search($mailbox, $goto)) !== false)
+			unset($goto[$key]);
+
+		return sizeof($goto) > 0 ? implode(',', $goto) : false;
 	}
 }

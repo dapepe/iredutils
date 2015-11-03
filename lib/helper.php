@@ -1,9 +1,10 @@
 <?php
 
 class Helper {
-	public function __construct($cli) {
+	public function __construct($cli=false) {
 		$this->db = new MicroDB\MySQL(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-		$this->init($cli);
+		if ($cli)
+			$this->init($cli);
 	}
 
 	public function renderTable($data, $header = false) {

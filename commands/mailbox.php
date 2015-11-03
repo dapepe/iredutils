@@ -1,9 +1,5 @@
 <?php
 
-// https://bitbucket.org/zhb/iredmail/src/7b3777b91f8c63933d34ffa6a1d257f3bacfffdc/iRedMail/tools/create_mail_user_SQL.sh?at=default&fileviewer=file-view-default
-
-// http://www.serveradminblog.com/2010/03/how-to-whitelist-hosts-or-ip-addresses-in-postfix/
-
 class MailboxCommand extends Helper {
 	public function init($cli) {
 		if (!isset($cli['arguments'][0])) {
@@ -213,6 +209,12 @@ class MailboxCommand extends Helper {
 		$this->removeDir($dir);
 		$this->db->table('mailbox')->removeBy('username', $email);
 		$this->db->remove('alias', $this->db->where('address', $email).' AND '.$this->db->where('goto', $email));
+
+		// Remove all aliases that include the mailbox
+		include_once 'alias.php';
+		$alias = new AliasCommand();
+		foreach ($alias->show($email) as $node)
+			$alias->remove($node['address'], $email);
 	}
 
 	public function show($domain=false, $search=false) {
