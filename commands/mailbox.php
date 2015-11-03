@@ -87,7 +87,7 @@ class MailboxCommand extends Helper {
 
 	public function showUsage() {
 		echo 'Usage: iredcli mailbox'."\n";
-		echo '  list [<DOMAIN> --search=<SEARCH>]'."\n";
+		echo '  show [<DOMAIN> --search=<SEARCH>]'."\n";
 		echo '  add <EMAIL> [--password=<PASSWORD> --maildir=<MAILDIR>]'."\n";
 		echo '  update <EMAIL> [--password=<PASSWORD>]'."\n";
 		echo '  remove <EMAIL>'."\n";
@@ -102,6 +102,11 @@ class MailboxCommand extends Helper {
 		$node = $this->db->table('mailbox')->getOneBy('username', $email);
 		if ($node)
 			throw new \Exception('Username already exists: '.$email);
+
+		// Check if an alias exists
+		$node = $this->db->table('alias')->getOneBy('address', $email);
+		if ($node)
+			throw new \Exception('An alias already exists for this address: '.$email);
 
 		// Check if the domain exists
 		$domain = explode('@', $email);
@@ -158,6 +163,15 @@ class MailboxCommand extends Helper {
 			// expired: 9999-12-31 00:00:00
 			'local_part'           => $localpart
 		]);
+		$this->db->table('alias')->insert([
+			'address'      => $email,
+			'goto'         => $email,
+			'name'         => '',
+			'accesspolicy' => '',
+			'domain'       => $domain,
+			'created'      => date('Y-m-d H:i:s'),
+			'modified'     => date('Y-m-d H:i:s'),
+		]);
 	}
 
 	public function update($email, $password=false) {
@@ -198,6 +212,7 @@ class MailboxCommand extends Helper {
 
 		$this->removeDir($dir);
 		$this->db->table('mailbox')->removeBy('username', $email);
+		$this->db->remove('alias', $this->db->where('address', $email).' AND '.$this->db->where('goto', $email));
 	}
 
 	public function show($domain=false, $search=false) {

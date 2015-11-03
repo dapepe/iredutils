@@ -49,30 +49,88 @@ class AliasCommand extends Helper {
 
 	public function showUsage() {
 		echo 'Usage: iredcli alias'."\n";
-		echo '  list [<DOMAIN> --search=<SEARCH>]'."\n";
+		echo '  show [<DOMAIN|EMAIL> --search=<SEARCH>]'."\n";
 		echo '  add <ALIAS> <MAILBOX>'."\n";
 		echo '  remove <ALIAS> [<MAILBOX>]'."\n";
 	}
 
 	public function add($address, $mailbox) {
-		// Check if the mailbox exists
-		$node = $this->db->select('*', 'alias', $this->db->where('address', $address).' AND '.$this->db->where('goto', $mailbox))
+		// Check email format
+		if (!filter_var($address, FILTER_VALIDATE_EMAIL))
+			throw new \Exception('Not a valid e-mail: '.$address);
+
+		// Check if the domain exists
+		$domain = explode('@', $address);
+		$domain = array_pop($domain);
+		$node = $this->db->table('domain')->getOneBy('domain', $domain);
 		if (!$node)
-			throw new \Exception('Mailbox does not exist: '.$email);
+			throw new \Exception('Domain does not exist: '.$domain);
+
+		// Check if the mailbox exists
+		$node = $this->db->table('mailbox')->getOneBy('username', $mailbox);
+		if (!$node)
+			throw new \Exception('Mailbox does not exist: '.$mailbox);
+
+		// Check if the alias exists
+		$node = $this->getEntry($address, $mailbox);
+		if ($node)
+			throw new \Exception('Alias already exists: '.$address.' -> '.$mailbox);
+
+		$this->db->table('alias')->insert([
+			'address'      => $address,
+			'goto'         => $mailbox,
+			'name'         => '',
+			'accesspolicy' => 'public',
+			'domain'       => $domain,
+			'created'      => date('Y-m-d H:i:s'),
+			'modified'     => date('Y-m-d H:i:s'),
+			// active: 1
+			// expired: 9999-12-31 00:00:00
+		]);
 	}
 
 	public function remove($address, $mailbox) {
-		$node = $this->db->table('domain')->getOneBy('domain', $domain);
+		// Check if the alias exists
+		$node = $this->getEntry($address, $mailbox);
+		if (!$node)
+			throw new \Exception('Alias does not exist: '.$address.' -> '.$mailbox);
 
-		if ($node === false)
-			throw new \Exception('Domain not found: '.$domain);
+		if ($node['accesspolicy'] != 'public')
+			throw new \Exception('Alias can\'t be removed (accesspolicy not public)');
 
-		$this->db->table('domain')->removeBy('domain', $domain);
+		$this->db->remove('alias', $this->db->where('address', $address).' AND '.$this->db->where('goto', $mailbox));
 	}
 
-	public function show($domain=false, $search=false) {
-		return $this->db->select('*', 'alias', false, 'address');
-		if ($domain)
-			return $this->db->select('*', 'alias', $this->db->where('domain', $domain).($search ? ' AND '.$this->db->whereLike('address', '%'.$search.'%') : ''), 'domain');
+	public function show($domainOrEmail=false, $search=false) {
+
+		if ($domainOrEmail) {
+			return $this->db->select(
+				'*',
+				'alias',
+				$this->db->where('accesspolicy', 'public') .
+				' AND ' .
+				$this->db->where(strpos($domainOrEmail, '@') === false ? 'domain' : 'goto', $domainOrEmail) .
+				($search
+					? ' AND ' . $this->db->whereLike('address', '%' . $search . '%')
+					: ''
+				),
+				'domain');
+		}
+		return $this->db->select(
+			'*',
+			'alias',
+				$this->db->where('accesspolicy', 'public').
+				($search
+					? ' AND '.$this->db->whereLike('address', '%'.$search.'%')
+					: ''),
+			'domain');
+	}
+
+	public function getEntry($address, $mailbox) {
+		$arrItem = $this->db->select('*', 'alias', $this->db->where('address', $address).' AND '.$this->db->where('goto', $mailbox));
+		if ($arrItem)
+			return $arrItem[0];
+		else
+			return false;
 	}
 }
