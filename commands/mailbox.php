@@ -31,14 +31,15 @@ class MailboxCommand extends Helper {
 					$this->add(
 						$cli['arguments'][1],
 						isset($cli['options']['password'])
-							? $cli['options']['password']
-							: (isset($cli['options']['password'])
+							? ($cli['options']['password'] == 1
 								? \cli\prompt('Enter password', false, ': ', true)
-								: false
-							),
+								: $cli['options']['password']
+							)
+							: false,
 						isset($cli['options']['maildir'])
 							? $cli['options']['maildir']
-							: false
+							: false,
+						isset($cli['options']['ishash'])
 					);
 					echo 'OK'."\n";
 					break;
@@ -50,12 +51,15 @@ class MailboxCommand extends Helper {
 						die();
 					}
 
-					$this->update($cli['arguments'][1], isset($cli['options']['password'])
-						? $cli['options']['password']
-						: (isset($cli['options']['password'])
-							? \cli\prompt('Enter password', false, ': ', true)
-							: false
-						)
+					$this->update(
+						$cli['arguments'][1],
+						isset($cli['options']['password'])
+							? ($cli['options']['password'] == 1
+								? \cli\prompt('Enter password', false, ': ', true)
+								: $cli['options']['password']
+							)
+							: false,
+						isset($cli['options']['ishash'])
 					);
 					echo 'OK'."\n";
 					break;
@@ -68,6 +72,26 @@ class MailboxCommand extends Helper {
 						),
 						['username', 'created', 'passwordlastchange']
 					);
+					break;
+
+				case 'export':
+					echo json_encode(
+						$this->show(
+							isset($cli['arguments'][1]) ? $cli['arguments'][1] : false,
+							isset($cli['options']['search']) ? $cli['options']['search'] : false
+						),
+						JSON_PRETTY_PRINT
+					);
+					break;
+
+				case 'import':
+					if (!isset($cli['arguments'][1])) {
+						echo 'Insufficient arguments: filename required'."\n";
+						$this->showUsage();
+						die();
+					}
+
+					$this->import($cli['arguments'][1]);
 					break;
 
 				default:
@@ -84,12 +108,14 @@ class MailboxCommand extends Helper {
 	public function showUsage() {
 		echo 'Usage: iredcli mailbox'."\n";
 		echo '  show [<DOMAIN> --search=<SEARCH>]'."\n";
-		echo '  add <EMAIL> [--password=<PASSWORD> --maildir=<MAILDIR>]'."\n";
-		echo '  update <EMAIL> [--password=<PASSWORD>]'."\n";
+		echo '  add <EMAIL> [--password=<PASSWORD> --maildir=<MAILDIR> --ishash]'."\n";
+		echo '  update <EMAIL> [--password=<PASSWORD> --ishash]'."\n";
 		echo '  remove <EMAIL>'."\n";
+		echo '  export [<DOMAIN> --search=<SEARCH>]'."\n";
+		echo '  import <FILENAME>'."\n";
 	}
 
-	public function add($email, $password=false, $maildir=false) {
+	public function add($email, $password=false, $maildir=false, $isHash=false) {
 		// Check email format
 		if (!filter_var($email, FILTER_VALIDATE_EMAIL))
 			throw new \Exception('Not a valid e-mail: '.$email);
@@ -117,7 +143,7 @@ class MailboxCommand extends Helper {
 			$password = $this->generateRandomString();
 			echo 'Generated password: '.$password."\n";
 		}
-		$hash = $this->generatePasswordHash($password);
+		$hash = $isHash ? $password : $this->generatePasswordHash($password);
 
 		// Initialize the mail directory
 		if ($maildir) {
@@ -222,6 +248,15 @@ class MailboxCommand extends Helper {
 			return $this->db->select('*', 'mailbox', $this->db->where('domain', $domain).($search ? ' AND '.$this->db->whereLike('username', '%'.$search.'%') : ''), 'domain');
 
 		return $this->db->select('*', 'mailbox', $search ? $this->db->whereLike('username', '%'.$search.'%') : false, 'domain');
+	}
+
+	public function import($filename) {
+		$data = json_decode(file_get_contents($filename), true);
+		if (!$data)
+			throw new \Exception('No data to import');
+
+		foreach ($data as $row)
+			$this->add($row['username'], isset($row['hash']) ? $row['hash'] : $row['password'], isset($row['maildir']) ? $row['maildir'] : false, isset($row['hash']));
 	}
 
 	public function generateRandomString($length = 10) {

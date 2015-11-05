@@ -42,6 +42,26 @@ class AliasCommand extends Helper {
 					);
 					break;
 
+				case 'export':
+					echo json_encode(
+						$this->show(
+							isset($cli['arguments'][1]) ? $cli['arguments'][1] : false,
+							isset($cli['options']['search']) ? $cli['options']['search'] : false
+						),
+						JSON_PRETTY_PRINT
+					);
+					break;
+
+				case 'import':
+					if (!isset($cli['arguments'][1])) {
+						echo 'Insufficient arguments: filename required'."\n";
+						$this->showUsage();
+						die();
+					}
+
+					$this->import($cli['arguments'][1]);
+					break;
+
 				default:
 					echo 'Invalid arguement: '.$cli['arguments'][0]."\n";
 					$this->showUsage();
@@ -58,6 +78,8 @@ class AliasCommand extends Helper {
 		echo '  show [<DOMAIN|EMAIL> --search=<SEARCH>]'."\n";
 		echo '  add <ALIAS> <MAILBOX>'."\n";
 		echo '  remove <ALIAS> [<MAILBOX>]'."\n";
+		echo '  export [<DOMAIN|EMAIL> --search=<SEARCH>]'."\n";
+		echo '  import <FILENAME>'."\n";
 	}
 
 	public function add($address, $mailbox) {
@@ -73,19 +95,31 @@ class AliasCommand extends Helper {
 			throw new \Exception('Domain does not exist: '.$domain);
 
 		// Check if the mailbox exists
-		$node = $this->db->table('mailbox')->getOneBy('username', $mailbox);
-		if (!$node)
-			throw new \Exception('Mailbox does not exist: '.$mailbox);
+		if (strpos($mailbox, ',')) {
+			$mailboxList = preg_split('/\s?+[,;]\s?+/', $mailbox);
+		} else {
+			$mailboxList = [$mailbox];
+		}
+		/*
+		foreach ($mailboxList as $mailbox) {
+			$node = $this->db->table('mailbox')->getOneBy('username', $mailbox);
+			if (!$node)
+				throw new \Exception('Mailbox does not exist: '.$mailbox);
+		}
+		*/
 
 		// Add a new mailbox to the alias
 		$node = $this->db->table('alias')->getOneBy('address', $address);
 		if ($node) {
 			$goto = explode(',', $node['goto']);
-			if (in_array($mailbox, $goto)) {
-				echo 'Alias already exists: '.$address.' -> '.$mailbox."\n";
-				return;
+			foreach ($mailboxList as $mailbox) {
+				if (in_array($mailbox, $goto)) {
+					echo 'Alias already exists: ' . $address . ' -> ' . $mailbox . "\n";
+					continue;
+				}
+				$goto[] = $mailbox;
 			}
-			$goto[] = $mailbox;
+
 			$goto = implode(',', $goto);
 
 			$this->db->table('alias')->updateBy('address', $address, [
@@ -156,8 +190,25 @@ class AliasCommand extends Helper {
 			'domain');
 	}
 
+	public function import($filename) {
+		$data = json_decode(file_get_contents($filename), true);
+		if (!$data)
+			throw new \Exception('No data to import');
+
+		foreach ($data as $row) {
+			if (
+				(isset($row['accesspolicy']) && $row['accesspolicy'] != 'public')
+				|| !isset($row['address'])
+				|| !isset($row['goto'])
+				|| $row['goto'] == ''
+			)
+				continue;
+			$this->add($row['address'], $row['goto']);
+		}
+	}
+
 	public function cleanGoto($goto, $mailbox) {
-		$goto = explode(',', $goto);
+		$goto = preg_split('/\s?+[,;]\s?+/', $goto);
 
 		if (($key = array_search($mailbox, $goto)) !== false)
 			unset($goto[$key]);

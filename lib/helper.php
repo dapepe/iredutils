@@ -2,9 +2,13 @@
 
 class Helper {
 	public function __construct($cli=false) {
-		$this->db = new MicroDB\MySQL(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+		$this->updateConnection(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 		if ($cli)
 			$this->init($cli);
+	}
+
+	public function updateConnection($host, $user, $password, $db) {
+		$this->db = new MicroDB\MySQL($host, $user, $password, $db);
 	}
 
 	public function renderTable($data, $header = false) {

@@ -29,6 +29,20 @@ class DomainCommand extends Helper {
 					$this->renderTable($this->show(), ['domain', 'created']);
 					break;
 
+				case 'export':
+					echo json_encode($this->show(), JSON_PRETTY_PRINT);
+					break;
+
+				case 'import':
+					if (!isset($cli['arguments'][1])) {
+						echo 'Insufficient arguments: filename required'."\n";
+						$this->showUsage();
+						die();
+					}
+
+					$this->import($cli['arguments'][1]);
+					break;
+
 				default:
 					echo 'Invalid arguement: '.$cli['arguments'][0]."\n";
 					$this->showUsage();
@@ -45,10 +59,12 @@ class DomainCommand extends Helper {
 		echo '  show'."\n";
 		echo '  add <DOMAIN>'."\n";
 		echo '  remove <DOMAIN>'."\n";
+		echo '  export'."\n";
+		echo '  import <FILENAME>'."\n";
 	}
 
 	public function add($domain) {
-		if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/', $domain))
+		if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9.-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/', $domain))
 			throw new \Exception('Not a valid domain name: '.$domain);
 
 		$node = $this->db->table('domain')->getOneBy('domain', $domain);
@@ -84,5 +100,14 @@ class DomainCommand extends Helper {
 
 	public function show() {
 		return $this->db->select('*', 'domain', false, 'domain');
+	}
+
+	public function import($filename) {
+		$data = json_decode(file_get_contents($filename), true);
+		if (!$data)
+			throw new \Exception('No data to import');
+
+		foreach ($data as $row)
+			$this->add(is_string($row) ? $row : $row['domain']);
 	}
 }
