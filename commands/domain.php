@@ -68,11 +68,9 @@ class DomainCommand extends Helper {
 			throw new \Exception('Not a valid domain name: '.$domain);
 
 		$node = $this->db->table('domain')->getOneBy('domain', $domain);
-		if ($node) {
-			throw new \Exception('Domain already exists: ' . $domain);
-			return;
-		}
-		
+		if ($node)
+			throw new \Exception('Domain already exists: '.$domain);
+
 		$this->db->table('domain')->insert([
 			'domain' => $domain,
 			'created' => date('Y-m-d H:i:s'),
@@ -109,7 +107,12 @@ class DomainCommand extends Helper {
 		if (!$data)
 			throw new \Exception('No data to import');
 
-		foreach ($data as $row)
-			$this->add(is_string($row) ? $row : $row['domain']);
+		foreach ($data as $row) {
+			try {
+				$this->add(is_string($row) ? $row : $row['domain']);
+			} catch (Exception $e) {
+				// Don't do anything
+			}
+		}
 	}
 }

@@ -203,7 +203,11 @@ class AliasCommand extends Helper {
 				|| $row['goto'] == ''
 			)
 				continue;
-			$this->add($row['address'], $row['goto']);
+			try {
+				$this->add($row['address'], $row['goto']);
+			} catch (Exception $e) {
+				// Don't do anything
+			}
 		}
 	}
 

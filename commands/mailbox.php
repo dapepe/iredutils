@@ -255,8 +255,14 @@ class MailboxCommand extends Helper {
 		if (!$data)
 			throw new \Exception('No data to import');
 
-		foreach ($data as $row)
-			$this->add($row['username'], isset($row['hash']) ? $row['hash'] : $row['password'], isset($row['maildir']) ? $row['maildir'] : false, isset($row['hash']));
+		foreach ($data as $row) {
+			try {
+				$this->add($row['username'], isset($row['hash']) ? $row['hash'] : $row['password'], isset($row['maildir']) ? $row['maildir'] : false, isset($row['hash']));
+			} catch (Exception $e) {
+				// Don't do anything
+			}
+		}
+
 	}
 
 	public function generateRandomString($length = 10) {
