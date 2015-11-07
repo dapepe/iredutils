@@ -17,7 +17,11 @@ class AliasCommand extends Helper {
 						die();
 					}
 
-					$this->remove($cli['arguments'][1], isset($cli['arguments'][2]) ? $cli['arguments'][2] : false);
+					$this->remove(
+						$cli['arguments'][1],
+						isset($cli['arguments'][2]) ? $cli['arguments'][2] : false,
+						isset($cli['options']['search']) ? $cli['options']['search'] : false
+					);
 					echo 'OK'."\n";
 					break;
 
@@ -77,7 +81,7 @@ class AliasCommand extends Helper {
 		echo 'Usage: iredcli alias'."\n";
 		echo '  show [<DOMAIN|EMAIL> --search=<SEARCH>]'."\n";
 		echo '  add <ALIAS> <MAILBOX>'."\n";
-		echo '  remove <ALIAS> [<MAILBOX>]'."\n";
+		echo '  remove <ALIAS> [<MAILBOX> --search=<SEARCH>]'."\n";
 		echo '  export [<DOMAIN|EMAIL> --search=<SEARCH>]'."\n";
 		echo '  import <FILENAME>'."\n";
 	}
@@ -143,11 +147,17 @@ class AliasCommand extends Helper {
 		]);
 	}
 
-	public function remove($address, $mailbox=false) {
+	public function remove($address, $mailbox=false, $search=false) {
 		// Check if the alias exists
 		$node = $this->db->table('alias')->getOneBy('address', $address);
-		if (!$node)
+		if (!$node && !$search)
 			throw new \Exception('Alias does not exist: '.$address);
+
+		if ($search) {
+			foreach ($this->show($address, $search) as $alias)
+				$this->remove($alias['address'], $mailbox);
+			return;
+		}
 
 		if ($node['accesspolicy'] != 'public')
 			throw new \Exception('Alias can\'t be removed (accesspolicy not public)');
@@ -157,6 +167,7 @@ class AliasCommand extends Helper {
 
 		if (!$mailbox || !$goto) {
 			$this->db->table('alias')->removeBy('address', $address);
+			echo 'Deleting alias: '.$address.($mailbox ? ' -> '.$mailbox : '')."\n";
 			return;
 		}
 
@@ -164,6 +175,8 @@ class AliasCommand extends Helper {
 			'goto'     => $goto,
 			'modified' => date('Y-m-d H:i:s')
 		]);
+
+		echo 'Removing alias: '.$address.($mailbox ? ' -> '.$mailbox : '')."\n";
 	}
 
 	public function show($domainOrEmail=false, $search=false) {
@@ -178,7 +191,7 @@ class AliasCommand extends Helper {
 					? ' AND ' . $this->db->whereLike('address', '%' . $search . '%')
 					: ''
 				),
-				'domain');
+				'address');
 		}
 		return $this->db->select(
 			'*',

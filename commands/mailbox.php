@@ -17,7 +17,10 @@ class MailboxCommand extends Helper {
 						die();
 					}
 
-					$this->remove($cli['arguments'][1]);
+					$this->remove(
+						$cli['arguments'][1],
+						isset($cli['options']['search']) ? $cli['options']['search'] : false
+					);
 					echo 'OK'."\n";
 					break;
 
@@ -110,7 +113,7 @@ class MailboxCommand extends Helper {
 		echo '  show [<DOMAIN> --search=<SEARCH>]'."\n";
 		echo '  add <EMAIL> [--password=<PASSWORD> --maildir=<MAILDIR> --ishash]'."\n";
 		echo '  update <EMAIL> [--password=<PASSWORD> --ishash]'."\n";
-		echo '  remove <EMAIL>'."\n";
+		echo '  remove <EMAIL> [--search=<SEARCH>]'."\n";
 		echo '  export [<DOMAIN> --search=<SEARCH>]'."\n";
 		echo '  import <FILENAME>'."\n";
 	}
@@ -218,11 +221,17 @@ class MailboxCommand extends Helper {
 		]);
 	}
 
-	public function remove($email) {
+	public function remove($emailOrDomain, $search=false) {
 		// Check if the mailbox exists
-		$node = $this->db->table('mailbox')->getOneBy('username', $email);
-		if (!$node)
-			throw new \Exception('Mailbox does not exist: '.$email);
+		$node = $this->db->table('mailbox')->getOneBy('username', $emailOrDomain);
+		if (!$node && !$search)
+			throw new \Exception('Mailbox does not exist: '.$emailOrDomain);
+
+		if ($search) {
+			foreach ($this->show($emailOrDomain, $search) as $mailbox)
+				$this->remove($mailbox['username']);
+			return;
+		}
 
 		$dir =
 			$node['storagebasedirectory'] . DIRECTORY_SEPARATOR .
@@ -230,24 +239,24 @@ class MailboxCommand extends Helper {
 			$node['maildir'];
 
 		if (!is_dir($dir))
-			throw new \Exception('Storage directory does not exist: '.$dir);
+			$this->removeDir($dir);
 
-		$this->removeDir($dir);
-		$this->db->table('mailbox')->removeBy('username', $email);
-		$this->db->remove('alias', $this->db->where('address', $email).' AND '.$this->db->where('goto', $email));
+		$this->db->table('mailbox')->removeBy('username', $emailOrDomain);
+		$this->db->remove('alias', $this->db->where('address', $emailOrDomain).' AND '.$this->db->where('goto', $emailOrDomain));
+		echo 'Remove mailbox: '.$emailOrDomain."\n";
 
 		// Remove all aliases that include the mailbox
 		include_once 'alias.php';
 		$alias = new AliasCommand();
-		foreach ($alias->show($email) as $node)
-			$alias->remove($node['address'], $email);
+		foreach ($alias->show($emailOrDomain) as $node)
+			$alias->remove($node['address'], $emailOrDomain);
 	}
 
 	public function show($domain=false, $search=false) {
 		if ($domain)
 			return $this->db->select('*', 'mailbox', $this->db->where('domain', $domain).($search ? ' AND '.$this->db->whereLike('username', '%'.$search.'%') : ''), 'domain');
 
-		return $this->db->select('*', 'mailbox', $search ? $this->db->whereLike('username', '%'.$search.'%') : false, 'domain');
+		return $this->db->select('*', 'mailbox', $search ? $this->db->whereLike('username', '%'.$search.'%') : false, 'username');
 	}
 
 	public function import($filename) {
