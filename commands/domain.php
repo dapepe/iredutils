@@ -68,9 +68,11 @@ class DomainCommand extends Helper {
 			throw new \Exception('Not a valid domain name: '.$domain);
 
 		$node = $this->db->table('domain')->getOneBy('domain', $domain);
-		if ($node)
-			throw new \Exception('Domain already exists: '.$domain);
-
+		if ($node) {
+			throw new \Exception('Domain already exists: ' . $domain);
+			return;
+		}
+		
 		$this->db->table('domain')->insert([
 			'domain' => $domain,
 			'created' => date('Y-m-d H:i:s'),
