@@ -111,7 +111,7 @@ class DomainCommand extends Helper {
 			try {
 				$this->add(is_string($row) ? $row : $row['domain']);
 			} catch (Exception $e) {
-				// Don't do anything
+				echo 'ERROR: '.$e->getMessage()."\n";
 			}
 		}
 	}

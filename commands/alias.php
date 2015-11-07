@@ -206,7 +206,7 @@ class AliasCommand extends Helper {
 			try {
 				$this->add($row['address'], $row['goto']);
 			} catch (Exception $e) {
-				// Don't do anything
+				echo 'ERROR: '.$e->getMessage()."\n";
 			}
 		}
 	}

@@ -259,7 +259,7 @@ class MailboxCommand extends Helper {
 			try {
 				$this->add($row['username'], isset($row['hash']) ? $row['hash'] : $row['password'], isset($row['maildir']) ? $row['maildir'] : false, isset($row['hash']));
 			} catch (Exception $e) {
-				// Don't do anything
+				echo 'ERROR: '.$e->getMessage()."\n";
 			}
 		}
 
