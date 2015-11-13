@@ -1,7 +1,7 @@
 <?php
 
 class MailboxCommand extends Helper {
-	public function init($cli) {
+	public function cli($cli) {
 		if (!isset($cli['arguments'][0])) {
 			echo 'No operation specified!'."\n";
 			$this->showUsage();

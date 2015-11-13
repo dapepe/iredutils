@@ -1,5 +1,7 @@
 <?php
 
+// Obsolete: Has been used to compare schemas across different versions
+
 class SchemaCommand {
 	public function __construct($cli) {
 		if (!isset($cli['arguments'][0])) {
@@ -8,7 +10,7 @@ class SchemaCommand {
 			die();
 		}
 			
-		$db = new MicroDB\MySQL(DB_HOST, DB_USER, DB_PASSWORD, $cli['arguments'][0]);
+		$db = new MicroDB\MySQL(DB_VMAIL_HOST, DB_VMAIL_USER, DB_VMAIL_PASSWORD, $cli['arguments'][0]);
 		$schema = '';
 
 		foreach ($db->tables() as $tableId) {

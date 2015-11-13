@@ -2,9 +2,13 @@
 
 class Helper {
 	public function __construct($cli=false) {
-		$this->updateConnection(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+		$this->init();
 		if ($cli)
-			$this->init($cli);
+			$this->cli($cli);
+	}
+
+	public function init() {
+		$this->updateConnection(DB_VMAIL_HOST, DB_VMAIL_USER, DB_VMAIL_PASSWORD, DB_VMAIL_NAME);
 	}
 
 	public function updateConnection($host, $user, $password, $db) {

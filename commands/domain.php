@@ -1,7 +1,7 @@
 <?php
 
 class DomainCommand extends Helper {
-	public function init($cli) {
+	public function cli($cli) {
 		if (!isset($cli['arguments'][0])) {
 			echo 'No operation specified!'."\n";
 			$this->showUsage();
@@ -76,6 +76,11 @@ class DomainCommand extends Helper {
 			'created' => date('Y-m-d H:i:s'),
 			'modified' => date('Y-m-d H:i:s')
 		]);
+
+		// Add internal domains the the whitelist
+		include_once 'policy.php';
+		$policy = new PolicyCommand();
+		$policy->add('internal_domains', '@'.$domain);
 	}
 
 	public function remove($domain) {
@@ -96,6 +101,11 @@ class DomainCommand extends Helper {
 		$alias = new AliasCommand();
 		foreach ($alias->show($domain) as $node)
 			$alias->remove($node['address']);
+
+		// Remove the whitelist entry
+		include_once 'policy.php';
+		$policy = new PolicyCommand();
+		$policy->remove('internal_domains', '@'.$domain);
 	}
 
 	public function show() {
