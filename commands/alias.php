@@ -107,6 +107,22 @@ class AliasCommand extends Helper {
 		throw new Exception('404 - Not found');
 	}
 
+	public function getRoutes() {
+		return [
+			'GET' => [
+				'/alias/[?search=<STRING>]',
+				'/alias/:DOMAIN[?search=<STRING>]'
+			],
+			'POST' => [
+				'/alias/:ALIAS/:MAILBOX'
+			],
+			'DELETE' => [
+				'/alias/:ALIAS',
+				'/alias/:ALIAS/:MAILBOX'
+			]
+		];
+	}
+
 	public function showUsage() {
 		echo 'Usage: iredcli alias'."\n";
 		echo '  show [<DOMAIN|EMAIL> --search=<SEARCH>]'."\n";

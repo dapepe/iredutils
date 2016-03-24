@@ -35,9 +35,10 @@ try {
 	$res = ['result' => $cmd->rest($_SERVER['REQUEST_METHOD'], $parts)];
 
 } catch (Exception $e) {
-
 	$res = ['error' => $e->getMessage()];
-
+	if ($res['error'] == '404 - Not found' && isset($cmd) && method_exists($cmd, 'getRoutes')) {
+		$res['routes'] = $cmd->getRoutes();
+	}
 }
 
 header('Content-type: application/json');

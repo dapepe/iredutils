@@ -26,6 +26,7 @@ include 'autoload.php';
 include 'config.php';
 include 'helper.php';
 include 'command.php';
+include 'tempfile.php';
 
 /* Initialize settings
 --------------------------------------------------- */

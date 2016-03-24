@@ -54,6 +54,47 @@ class DomainCommand extends Helper {
 		}
 	}
 
+	public function rest($method, $path=array()) {
+		switch ($method) {
+			case 'GET':
+				// Show the domain list
+				if (!$path)
+					return $this->show();
+
+				break;
+			case 'POST':
+				// Create a domain
+				if (!is_array($path) || sizeof($path) != 1)
+					throw new Exception('Invalid request: Usage: POST:/domain/<DOMAIN>');
+
+				return $this->add(array_shift($path));
+				break;
+			case 'DELETE':
+				// Remove a domain
+				if (!is_array($path) || sizeof($path) != 1)
+					throw new Exception('Invalid request: Usage: DELETE:/domain/<DOMAIN>');
+
+				return $this->remove(array_shift($path));
+				break;
+		}
+
+		throw new Exception('404 - Not found');
+	}
+
+	public function getRoutes() {
+		return [
+			'GET' => [
+				'/domain/'
+			],
+			'POST' => [
+				'/domain/:DOMAIN'
+			],
+			'DELETE' => [
+				'/domain/:DOMAIN'
+			]
+		];
+	}
+
 	public function showUsage() {
 		echo 'Usage: iredcli domain'."\n";
 		echo '  show'."\n";

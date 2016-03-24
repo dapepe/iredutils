@@ -41,7 +41,7 @@ That's it! You can now us the CLI through the `iredcli` command and access the R
 
 In case you want to use the REST API, you need to perform some additional steps:
 
-1. Create an Apache configuration file in `/etc/apache2/conf-available/iredutilsapi.conf`:
+a. Create an Apache configuration file in `/etc/apache2/conf-available/iredutilsapi.conf`:
 
 ```
 <Directory /opt/iredutils>
@@ -50,18 +50,20 @@ In case you want to use the REST API, you need to perform some additional steps:
 </Directory>
 ```
 
-Next, enable the configuration by typing `a2enconf iredutilsapi`.
+Make sure you replace `Require all granted` with the appropriate security settings. (see https://httpd.apache.org/docs/2.4/howto/access.html).
 
-After this, edit the SSL site settings by opening the file `/etc/apache2/sites-enabled/default-ssl.conf`:
+b. Next, enable the configuration by typing `a2enconf iredutilsapi`.
+
+c. After this, edit the SSL site settings by opening the file `/etc/apache2/sites-enabled/default-ssl.conf`:
 
 ```
 RewriteEngine on
 RewriteRule ^/api/?(.*) /opt/iredutils/api.php/$1
 ```
 
-Before restarting the web server, make sure that mod_rewrite is enabled: `a2enmod rewrite`.
+d. Before restarting the web server, make sure that mod_rewrite is enabled: `a2enmod rewrite`.
 
-Now, restart your webserver by typing `service apache2 restart`
+e. Now, restart your webserver by typing `service apache2 restart`
 
 
 REST Endpoints

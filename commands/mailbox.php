@@ -108,6 +108,56 @@ class MailboxCommand extends Helper {
 		}
 	}
 
+	public function rest($method, $path=array()) {
+		switch ($method) {
+			case 'GET':
+				// Show the mailboxes
+				if (!$path)
+					return $this->show(false, isset($_REQUEST['search']) ? $_REQUEST['search'] : false);
+
+				if (is_array($path) && sizeof($path) == 1)
+					return $this->show($path[0], isset($_REQUEST['search']) ? $_REQUEST['search'] : false);
+
+				break;
+			case 'POST':
+				// Create a mailbox
+				if (!is_array($path) || sizeof($path) != 1)
+					throw new Exception('Invalid request: Usage: POST:/mailbox/<EMAIL>');
+
+				return $this->add(
+					array_shift($path), 
+					isset($_REQUEST['password']) ? $_REQUEST['password'] : false,
+					false,
+					isset($_REQUEST['ishash']) ? $_REQUEST['ishash'] : false
+				);
+				break;
+			case 'DELETE':
+				// Remove a mailbox
+				if (!is_array($path) || sizeof($path) != 1)
+					throw new Exception('Invalid request: Usage: DELETE:/mailbox/<EMAIL>');
+
+				return $this->remove(array_shift($path));
+				break;
+		}
+
+		throw new Exception('404 - Not found');
+	}
+
+	public function getRoutes() {
+		return [
+			'GET' => [
+				'/mailbox/[?search=<STRING>]',
+				'/mailbox/:DOMAIN[?search=<STRING>]'
+			],
+			'POST' => [
+				'/mailbox/:EMAIL[?password=<STRING>&ishash=<INT>]'
+			],
+			'DELETE' => [
+				'/mailbox/:EMAIL'
+			]
+		];
+	}
+
 	public function showUsage() {
 		echo 'Usage: iredcli mailbox'."\n";
 		echo '  show [<DOMAIN> --search=<SEARCH>]'."\n";
