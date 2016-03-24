@@ -41,6 +41,17 @@ class PolicyCommand extends Helper {
 					);
 					break;
 
+				case 'learn':
+					if (!isset($cli['arguments'][1]) && !isset($cli['arguments'][2])) {
+						echo 'Insufficient arguments'."\n";
+						$this->showUsage();
+						die();
+					}
+
+					$this->learn($cli['arguments'][1], $cli['arguments'][2]);
+					echo 'OK'."\n";
+					break;
+
 				default:
 					echo 'Invalid arguement: '.$cli['arguments'][0]."\n";
 					$this->showUsage();
@@ -61,6 +72,7 @@ class PolicyCommand extends Helper {
 		echo '  show [<POLICYGROUP> --search=<SEARCH>]'."\n";
 		echo '  add <POLICYGROUP> <MEMBER>'."\n";
 		echo '  remove <POLICYGROUP> <MEMBER>'."\n";
+		echo '  learn <ham|spam|forget> <FILE>'."\n";
 	}
 
 	public function add($group, $member) {
@@ -120,6 +132,16 @@ class PolicyCommand extends Helper {
 			'policy_groups',
 			($search ? $this->db->whereLike('Name', '%' . $search . '%') : ''),
 			'Name');
+	}
+
+	public function learn($type, $filename) {
+		if (!is_file($filename))
+			throw new \Exception('Invalid file: '.$filename);
+		
+		$command = new Command(CMD_SA_LEARN.' --'.strtolower($type).' --username='.VMAIL_USER.' '.$filename);
+		if ($command->getExitCode() !== 0)
+			throw new Exception('Could not add message to SA learning list (exit code '.$command->getExitCode().'): '.$command->getStderrText());
+		return $command->getStdoutText();
 	}
 
 	public function getMember($group, $member) {

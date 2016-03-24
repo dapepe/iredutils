@@ -1,5 +1,5 @@
-CLI Utilities for iRedMail
-==========================
+iRedUtils: CLI and REST API for iRedMail
+========================================
 
 Purpose
 -------
@@ -11,8 +11,9 @@ instead of relying on a web interface. Also, I was missing an open REST API to
 create and modify mailboxes.
 
 For this purpose I created a simple set of utilities consisting of a CLI tool
-called `iredcli` as well as a REST API to integrate external services. Currently,
-the functionality is limited to 
+called `iredcli` as well as a REST API to integrate external services. It certainly
+does not cover the full stack of the iRedAdmin Pro interface, but for me it gets the
+job done.
 
 
 Installation
@@ -36,7 +37,44 @@ Installation
 * Create an alias for the `iredcli` command
   - `ln -s /opt/iredutils/iredcli /usr/bin/iredcli`
 
-That's it! You can now us the CLI through the `iredcli` command. Have fun!
+That's it! You can now us the CLI through the `iredcli` command and access the REST API. Have fun!
+
+In case you want to use the REST API, you need to perform some additional steps:
+
+1. Create an Apache configuration file in `/etc/apache2/conf-available/iredutilsapi.conf`:
+
+```
+<Directory /opt/iredutils>
+    DirectoryIndex api.php
+    Require all granted
+</Directory>
+```
+
+Next, enable the configuration by typing `a2enconf iredutilsapi`.
+
+After this, edit the SSL site settings by opening the file `/etc/apache2/sites-enabled/default-ssl.conf`:
+
+```
+RewriteEngine on
+RewriteRule ^/api/?(.*) /opt/iredutils/api.php/$1
+```
+
+Before restarting the web server, make sure that mod_rewrite is enabled: `a2enmod rewrite`.
+
+Now, restart your webserver by typing `service apache2 restart`
+
+
+REST Endpoints
+--------------
+
+### GET: /domain
+
+List domains
+
+
+### POST: /domain/:domainname
+
+Creates a new domain
 
 
 CLI Usage
@@ -83,6 +121,7 @@ iredcli policy
   show [<POLICYGROUP> --search=<SEARCH>]
   add <POLICYGROUP> <MEMBER>
   remove <POLICYGROUP> <MEMBER>
+  learn <ham|spam|forget> <FILE>
 ```
 
 
@@ -162,6 +201,15 @@ Examples
 ./iredcli domain remove test.com
 ./iredcli mailbox remove test.com --search=.
 ```
+
+
+
+Contributing
+------------
+
+Please note that this is a side project for me and was mainly created to "skratch my own itch", so
+I only maintain it to the degree that I require it to work for my purposes. If you find any bugs
+of you have ideas for new features, be a sweatheart and simply send me a pull request. Cheers!
 
 
 License
