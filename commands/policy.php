@@ -147,7 +147,7 @@ class PolicyCommand extends Helper {
 		}
 
 		// Add a new alias
-		$this->db->table('policy_group_members')->insert([
+		return $this->db->table('policy_group_members')->insert([
 			'PolicyGroupID' => $node['ID'],
 			'Member' => $member
 		]);
@@ -163,7 +163,7 @@ class PolicyCommand extends Helper {
 		if (!$check)
 			throw new \Exception('Group member "'.$member.'" not found in '.$group);
 
-		$this->db->table('policy_group_members')->removeBy('ID', $check['ID']);
+		return $this->db->table('policy_group_members')->removeBy('ID', $check['ID']);
 	}
 
 	public function show($group=false, $search=false) {
@@ -193,7 +193,7 @@ class PolicyCommand extends Helper {
 			'Name');
 	}
 
-	public function type($type, $filename) {
+	public function learn($type, $filename) {
 		$type = strtolower($type);
 		switch ($type) {
 			case 'ham':
