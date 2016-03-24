@@ -77,6 +77,36 @@ class AliasCommand extends Helper {
 		}
 	}
 
+	public function rest($method, $path=array()) {
+		switch ($method) {
+			case 'GET':
+				// Show the alias list
+				if (!$path)
+					return $this->show(false, isset($_REQUEST['search']) ? $_REQUEST['search'] : false);
+
+				if (is_array($path) && sizeof($path) == 1)
+					return $this->show($path[0], isset($_REQUEST['search']) ? $_REQUEST['search'] : false);
+
+				break;
+			case 'POST':
+				// Create an alias
+				if (!is_array($path) || sizeof($path) != 2)
+					throw new Exception('Invalid request: Usage: POST:/alias/<ALIAS>/<MAILBOX>');
+
+				return $this->add(array_shift($path), array_shift($path));
+				break;
+			case 'DELETE':
+				// Remove an alias
+				if (!is_array($path) || (sizeof($path) != 1 && sizeof($path) != 2))
+					throw new Exception('Invalid request: Usage: DELETE:/alias/<ALIAS>/<MAILBOX>');
+					
+				return $this->remove(array_shift($path), array_shift($path));
+				break;
+		}
+
+		throw new Exception('404 - Not found');
+	}
+
 	public function showUsage() {
 		echo 'Usage: iredcli alias'."\n";
 		echo '  show [<DOMAIN|EMAIL> --search=<SEARCH>]'."\n";
