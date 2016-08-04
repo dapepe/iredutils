@@ -119,9 +119,11 @@ class DomainCommand extends Helper {
 		]);
 
 		// Add internal domains the the whitelist
+		/*
 		include_once 'policy.php';
 		$policy = new PolicyCommand();
 		$policy->add('internal_domains', '@'.$domain);
+		*/
 	}
 
 	public function remove($domain) {

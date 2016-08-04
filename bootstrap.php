@@ -40,14 +40,6 @@ if (!defined('DB_VMAIL_USER'))
 	define('DB_VMAIL_USER', 'root');
 if (!defined('DB_VMAIL_PASSWORD'))
 	define('DB_VMAIL_PASSWORD', '');
-if (!defined('DB_CLUEBRINGER_HOST'))
-	define('DB_CLUEBRINGER_HOST', '127.0.0.1');
-if (!defined('DB_CLUEBRINGER_NAME'))
-	define('DB_CLUEBRINGER_NAME', 'cluebringer');
-if (!defined('DB_CLUEBRINGER_USER'))
-	define('DB_CLUEBRINGER_USER', 'cluebringer');
-if (!defined('DB_CLUEBRINGER_PASSWORD'))
-	define('DB_CLUEBRINGER_PASSWORD', '');
 if (!defined('CMD_PYTHON'))
 	define('CMD_PYTHON', 'python');
 if (!defined('CMD_SA_LEARN'))
