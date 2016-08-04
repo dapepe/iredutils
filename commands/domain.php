@@ -146,9 +146,11 @@ class DomainCommand extends Helper {
 			$alias->remove($node['address']);
 
 		// Remove the whitelist entry
+		/*
 		include_once 'policy.php';
 		$policy = new PolicyCommand();
 		$policy->remove('internal_domains', '@'.$domain);
+		*/
 	}
 
 	public function show() {
