@@ -205,8 +205,10 @@ class AliasCommand extends Helper {
 			return;
 		}
 
+		/*
 		if ($node['accesspolicy'] != 'public')
 			throw new \Exception('Alias can\'t be removed (accesspolicy not public)');
+		*/
 
 		if ($mailbox)
 			$goto = $this->cleanGoto($node['goto'], $mailbox);
